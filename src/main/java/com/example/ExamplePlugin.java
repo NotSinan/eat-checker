@@ -1,53 +1,77 @@
 package com.example;
 
-import com.google.inject.Provides;
-import javax.inject.Inject;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.client.config.ConfigManager;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
+import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @PluginDescriptor(
-	name = "Example"
+		name = "PvP Eat Detector",
+		description = "Detects when an enemy player eats during PvP combat"
 )
 public class ExamplePlugin extends Plugin
 {
+	private boolean hasPrintedWelcomeMessage = false;
+	private boolean hasPrintedEnemyPlayerName = false;
+	private int oldHp = -1;
+	private int currentHp = -1;
+	private String enemyPlayerName = null;
+
+	private int totalDamage = 0;
+
 	@Inject
 	private Client client;
 
-	@Inject
-	private ExampleConfig config;
+	private Actor player;
 
 	@Override
 	protected void startUp() throws Exception
 	{
-		log.info("Example started!");
+		log.info("PvP Eat Detector started!");
 	}
 
 	@Override
 	protected void shutDown() throws Exception
 	{
-		log.info("Example stopped!");
+		log.info("PvP Eat Detector stopped!");
 	}
 
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged gameStateChanged)
 	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		if (gameStateChanged.getGameState() == GameState.LOGGED_IN && !hasPrintedWelcomeMessage)
 		{
-			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Example says " + config.greeting(), null);
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Welcome to PvP Eat Detector! Configured to detect when an enemy player eats.", null);
+			hasPrintedWelcomeMessage = true;
 		}
 	}
 
-	@Provides
-	ExampleConfig provideConfig(ConfigManager configManager)
+	@Subscribe
+	public void onInteractingChanged(InteractingChanged interactingChanged)
 	{
-		return configManager.getConfig(ExampleConfig.class);
+		player = interactingChanged.getSource().getInteracting();
+
+		if (player != null && player != client.getLocalPlayer()) {
+			enemyPlayerName = player.getName();
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Your current target is: " + enemyPlayerName, "Game");
+		} else {
+			enemyPlayerName = null;
+			totalDamage = 0;
+		}
+	}
+
+	@Subscribe
+	public void onHitsplatApplied(HitsplatApplied event) {
+		if (enemyPlayerName != null) {
+			Hitsplat hitsplat = event.getHitsplat();
+			int damageDealt = hitsplat.getAmount();
+			totalDamage += damageDealt;
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Damage dealt: " + totalDamage, "Game");
+		}
 	}
 }
