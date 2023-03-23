@@ -9,6 +9,8 @@ import net.runelite.client.plugins.PluginDescriptor;
 
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.ui.overlay.OverlayManager;
+
 
 @Slf4j
 @PluginDescriptor(
@@ -17,9 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 )
 public class ExamplePlugin extends Plugin {
 	private boolean hasPrintedWelcomeMessage = false;
-	private String enemyPlayerName = null;
-
-	private int totalDamageDealt = 0;
 
 	@Inject
 	private Client client;
@@ -28,6 +27,8 @@ public class ExamplePlugin extends Plugin {
 
 	@Inject
 	private EventBus eventBus;
+	@Inject
+	private OverlayManager overlayManager;
 
 	private CombatListener combatListener;
 
@@ -35,6 +36,7 @@ public class ExamplePlugin extends Plugin {
 	protected void startUp() throws Exception {
 		combatListener = new CombatListener(client);
 		eventBus.register(combatListener);
+		overlayManager.add(new DamageOverlay());
 	}
 
 	@Override

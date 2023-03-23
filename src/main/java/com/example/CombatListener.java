@@ -7,6 +7,12 @@ import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.PlayerDespawned;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.info.InfoPanel;
+import net.runelite.client.ui.overlay.infobox.InfoBox;
+import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
+
+import javax.inject.Inject;
+import java.awt.*;
 
 public class CombatListener {
 
@@ -33,13 +39,6 @@ public class CombatListener {
                 int damage = event.getHitsplat().getAmount();
                 fightState.addDamage(damage);
             }
-
         }
-    }
-    @Subscribe
-    public void onNpcDespawned(NpcDespawned event) {
-        int totalDamageDealt = fightState.getTotalDamageDealt();
-        System.out.println("Total damage dealt: " + totalDamageDealt);
-        fightState.reset();
     }
 }
