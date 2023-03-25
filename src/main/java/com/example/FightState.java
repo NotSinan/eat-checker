@@ -13,14 +13,16 @@ public class FightState {
 
     public void addDamage(int damage) {
         this.totalDamageDealt += damage;
+        System.out.println("Added damage: " + damage + ", new total: " + totalDamageDealt);
     }
+
 
     public int getTotalDamageDealt() {
         return this.totalDamageDealt;
     }
 
     public boolean isFinished() {
-        return npc == null || npc.isDead();
+        return npc.isDead() || npc == null;
     }
 
     public void reset() {
