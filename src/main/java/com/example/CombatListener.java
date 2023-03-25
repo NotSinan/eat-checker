@@ -2,43 +2,60 @@ package com.example;
 
 import net.runelite.api.Actor;
 import net.runelite.api.Client;
-import net.runelite.api.NPC;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.PlayerDespawned;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.plugins.info.InfoPanel;
-import net.runelite.client.ui.overlay.infobox.InfoBox;
-import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-
-import javax.inject.Inject;
-import java.awt.*;
 
 public class CombatListener {
 
     private final Client client;
+    private final DamageOverlay overlay;
     private FightState fightState;
+    private Actor actor;
 
-    public CombatListener(Client client) {
+    public CombatListener(Client client, DamageOverlay overlay) {
         this.client = client;
+        this.overlay = overlay;
         this.fightState = null;
     }
 
     @Subscribe
     public void onHitsplatApplied(HitsplatApplied event) {
-        Actor npc = client.getLocalPlayer().getInteracting();
-        if (npc != null && event.getActor() == client.getLocalPlayer()) {
-            if (fightState == null || !fightState.getNPC().equals(npc)) {
-                // Start a new fight
-                fightState = new FightState(npc);
-                System.out.println("New fight state");
-            }
+        actor = client.getLocalPlayer().getInteracting();
 
-            if (event.getActor() == npc) {
-                // Update the fight state with the damage dealt
-                int damage = event.getHitsplat().getAmount();
-                fightState.addDamage(damage);
-            }
+        if (actor == null) {
+            fightState = null;
+            return;
+        }
+
+        if (fightState == null) {
+            // Start a new fight
+            fightState = new FightState(actor);
+            System.out.println("New fight state");
+        }
+
+        if (event.getActor() == actor) {
+            // Update the fight state with the damage dealt
+            int damage = event.getHitsplat().getAmount();
+            fightState.addDamage(damage);
+            overlay.updateDamage(fightState.getTotalDamageDealt());
         }
     }
+
+    public void handleNpcDeath() {
+        if (fightState != null) {
+            overlay.updateDamage(0); // reset damage overlay
+            fightState = null; // reset fight state
+        }
+    }
+    @Subscribe
+    public void onNpcDespawned(NpcDespawned event) {
+        Actor despawnedActor = event.getNpc();
+
+        if (despawnedActor.equals(actor)) {
+            handleNpcDeath();
+        }
+    }
+
+
 }
